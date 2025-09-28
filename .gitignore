@@ -1,0 +1,61 @@
+# ========== Unity Default Ignores ==========
+[Ll]ibrary/
+[Tt]emp/
+[Bb]uild/
+[Bb]uilds/
+[Oo]bj/
+[Ll]ogs/
+UserSettings/
+MemoryCaptures/
+
+# Rider / VS / VSCode generated files
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Cache & auto-generated files
+*.apk
+*.aab
+*.unitypackage
+sysinfo.txt
+
+# ========== Custom Keep Rules ==========
+
+# Ignore all Assets by default
+Assets/*
+
+# Keep only Scripts & Scenes
+!Assets/Scripts/
+!Assets/Scenes/
+
+# Keep their .meta files too
+!Assets/Scripts/*.meta
+!Assets/Scenes/*.meta
+
+# Keep folder meta (biar folder tidak hilang)
+!Assets/Scripts.meta
+!Assets/Scenes.meta
+
+# Ignore everything in Packages except manifest and lock file
+Packages/*
+!Packages/manifest.json
+!Packages/packages-lock.json
+
+# Keep entire ProjectSettings (penting agar project bisa dibuka konsisten)
+!ProjectSettings/
+
+# ========== Optional ==========
+# Kalau ada folder lain penting, tinggal ditambah misal:
+# !Assets/Prefabs/
+# !Assets/Animations/

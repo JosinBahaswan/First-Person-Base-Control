@@ -1,0 +1,2 @@
+D:\PROJECT PROGRAM\GAME\Horror 3D Base Control\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\CMakeLists.txt
+D:\PROJECT PROGRAM\GAME\Horror 3D Base Control\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\GameActivity\CMakeLists.txt
