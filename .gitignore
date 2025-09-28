@@ -8,7 +8,7 @@
 UserSettings/
 MemoryCaptures/
 
-# Rider / VS / VSCode generated files
+# IDE / editor generated files
 *.csproj
 *.unityproj
 *.sln
@@ -30,32 +30,26 @@ MemoryCaptures/
 *.unitypackage
 sysinfo.txt
 
-# ========== Custom Keep Rules ==========
+# ========== Custom Rules ==========
 
-# Ignore all Assets by default
+# Ignore semua isi Assets
 Assets/*
 
-# Keep only Scripts & Scenes
-!Assets/Scripts/
-!Assets/Scenes/
+# Simpan semua script (.cs) di seluruh Assets
+!Assets/**/*.cs
 
-# Keep their .meta files too
-!Assets/Scripts/*.meta
+# Simpan semua Scene
+!Assets/Scenes/
+!Assets/Scenes/*.unity
 !Assets/Scenes/*.meta
 
-# Keep folder meta (biar folder tidak hilang)
-!Assets/Scripts.meta
-!Assets/Scenes.meta
+# Simpan meta file untuk script
+!Assets/**/*.meta
 
-# Ignore everything in Packages except manifest and lock file
+# Simpan ProjectSettings (penting agar project bisa dibuka konsisten)
+!ProjectSettings/
+
+# Simpan Packages yang penting
 Packages/*
 !Packages/manifest.json
 !Packages/packages-lock.json
-
-# Keep entire ProjectSettings (penting agar project bisa dibuka konsisten)
-!ProjectSettings/
-
-# ========== Optional ==========
-# Kalau ada folder lain penting, tinggal ditambah misal:
-# !Assets/Prefabs/
-# !Assets/Animations/
