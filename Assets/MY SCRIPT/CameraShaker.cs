@@ -5,17 +5,29 @@ public class CameraShaker : MonoBehaviour
 {
     public static CameraShaker Instance { get; private set; }
 
-    [Header("Walking Shake Settings")]
+    [Header("Global")] 
+    public bool enableShake = true;
+
+    [Header("Walking Shake Settings")] 
+    public bool enableWalkShake = true;
     public float walkShakeIntensity = 0.1f;
     public float walkShakeFrequency = 2f;
 
-    [Header("Explosion Shake Settings")]
+    [Header("Running Shake Settings")] 
+    public bool enableRunShake = true;
+    public float runShakeIntensity = 0.18f;
+    public float runShakeFrequency = 3.2f;
+
+    [Header("Explosion Shake Settings")] 
     public float explosionShakeIntensity = 0.5f;
     public float explosionShakeDuration = 0.5f;
     public float explosionShakeFrequency = 4f;
 
     private Vector3 originalPosition;
-    private bool isShaking = false;
+
+    private enum ShakeMode { None, Walk, Run }
+    private ShakeMode currentMode = ShakeMode.None;
+    private Coroutine continuousShakeRoutine;
 
     private void Awake()
     {
@@ -36,21 +48,42 @@ public class CameraShaker : MonoBehaviour
 
     public void ShakeFromExplosion()
     {
+        if (!enableShake) return;
         StartCoroutine(ExplosionShake());
     }
 
     public void StartWalkingShake()
     {
-        if (!isShaking)
-        {
-            StartCoroutine(WalkingShake());
-        }
+        if (!enableShake || !enableWalkShake) return;
+        SetMode(ShakeMode.Walk);
     }
 
     public void StopWalkingShake()
     {
-        isShaking = false;
-        transform.localPosition = originalPosition;
+        // Only stop if currently in Walk mode
+        if (currentMode == ShakeMode.Walk)
+        {
+            SetMode(ShakeMode.None);
+        }
+    }
+
+    public void StartRunningShake()
+    {
+        if (!enableShake || !enableRunShake) return;
+        SetMode(ShakeMode.Run);
+    }
+
+    public void StopRunningShake()
+    {
+        if (currentMode == ShakeMode.Run)
+        {
+            SetMode(ShakeMode.None);
+        }
+    }
+
+    public void StopAllShake()
+    {
+        SetMode(ShakeMode.None);
     }
 
     private IEnumerator ExplosionShake()
@@ -68,26 +101,57 @@ public class CameraShaker : MonoBehaviour
             yield return null;
         }
 
+        // Reset; if continuous mode is active, it will take over next frame
         transform.localPosition = originalPosition;
     }
 
-    private IEnumerator WalkingShake()
+    private void SetMode(ShakeMode mode)
     {
-        isShaking = true;
-        float sinTime = 0f;
+        if (currentMode == mode) return;
+        currentMode = mode;
 
-        while (isShaking)
+        if (continuousShakeRoutine != null)
         {
-            sinTime += Time.deltaTime * walkShakeFrequency;
+            StopCoroutine(continuousShakeRoutine);
+            continuousShakeRoutine = null;
+        }
 
+        if (currentMode != ShakeMode.None)
+        {
+            continuousShakeRoutine = StartCoroutine(ContinuousShake());
+        }
+        else
+        {
+            transform.localPosition = originalPosition;
+        }
+    }
+
+    private IEnumerator ContinuousShake()
+    {
+        float sinTime = 0f;
+        while (currentMode != ShakeMode.None)
+        {
+            float intensity;
+            float frequency;
+
+            if (currentMode == ShakeMode.Run)
+            {
+                intensity = runShakeIntensity;
+                frequency = runShakeFrequency;
+            }
+            else
+            {
+                intensity = walkShakeIntensity;
+                frequency = walkShakeFrequency;
+            }
+
+            sinTime += Time.deltaTime * frequency;
             float x = originalPosition.x;
-            float y = originalPosition.y + Mathf.Sin(sinTime) * walkShakeIntensity;
-
+            float y = originalPosition.y + Mathf.Sin(sinTime) * intensity;
             transform.localPosition = new Vector3(x, y, originalPosition.z);
 
             yield return null;
         }
-
         transform.localPosition = originalPosition;
     }
 }

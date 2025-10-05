@@ -42,7 +42,9 @@ Assets/*
 !Assets/Scenes/
 !Assets/Scenes/*.unity
 !Assets/Scenes/*.meta
-
+# Keep entire MY SCRIPT folder
+!Assets/MY\ SCRIPT/**
+!Assets/MY SCRIPT/**
 # Simpan meta file untuk script
 !Assets/**/*.meta
 

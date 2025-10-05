@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -48,6 +48,9 @@ public class FirstPersonMovement : MonoBehaviour
     private float idleTimer = 0f;
     private bool isMoving = false;
     private bool isWalking = false;
+    
+    [Header("Effects")]
+    public LowStaminaVignette lowStaminaEffect;
 
     void Awake()
     {
@@ -61,6 +64,15 @@ public class FirstPersonMovement : MonoBehaviour
         if (runButton != null)
         {
             runButton.onClick.AddListener(ToggleRun);
+        }
+
+        // Auto-find a LowStaminaVignette if not assigned
+        if (lowStaminaEffect == null)
+        {
+            if (Camera.main != null)
+                lowStaminaEffect = Camera.main.GetComponent<LowStaminaVignette>();
+            if (lowStaminaEffect == null)
+                lowStaminaEffect = GetComponentInChildren<LowStaminaVignette>();
         }
     }
 
@@ -151,6 +163,29 @@ public class FirstPersonMovement : MonoBehaviour
         UpdateStamina();
         UpdateRunButtonSprite();
 
+        // Update low-stamina vignette effect if present
+        if (lowStaminaEffect != null)
+        {
+            lowStaminaEffect.UpdateByStamina(currentStamina, maxStamina);
+        }
+
+        // Screen shake integration: trigger walk/run shake based on movement state
+        if (CameraShaker.Instance != null && CameraShaker.Instance.enableShake)
+        {
+            if (isMoving && IsRunning && CameraShaker.Instance.enableRunShake)
+            {
+                CameraShaker.Instance.StartRunningShake();
+            }
+            else if (isMoving && !IsRunning && CameraShaker.Instance.enableWalkShake)
+            {
+                CameraShaker.Instance.StartWalkingShake();
+            }
+            else
+            {
+                CameraShaker.Instance.StopAllShake();
+            }
+        }
+
         float targetMovingSpeed = IsRunning ? runSpeed : speed;
         if (speedOverrides.Count > 0)
         {
@@ -189,6 +224,18 @@ public class FirstPersonMovement : MonoBehaviour
         movement.y = velocity.y;
         characterController.Move(movement * Time.deltaTime);
     }
+
+    // Public API to enable/disable the low-stamina screen effect
+    public void SetLowStaminaEffectEnabled(bool enabled)
+    {
+        if (lowStaminaEffect != null)
+        {
+            lowStaminaEffect.SetEnabled(enabled);
+        }
+    }
+
+    public void EnableLowStaminaEffect() => SetLowStaminaEffectEnabled(true);
+    public void DisableLowStaminaEffect() => SetLowStaminaEffectEnabled(false);
 
     void OnControllerColliderHit(ControllerColliderHit hit)
     {
