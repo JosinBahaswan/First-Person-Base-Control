@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Day 4 Optimize Stamina Consumption Logic.unity
+    path: Assets/00_Scenes/Day 4 Optimize Stamina Consumption Logic.unity
     guid: d412929acccfcfd45b919fcc90d2359b
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
