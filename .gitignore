@@ -39,12 +39,12 @@ Assets/*
 !Assets/**/*.cs
 
 # Simpan semua Scene
-!Assets/Scenes/
-!Assets/Scenes/*.unity
-!Assets/Scenes/*.meta
+!Assets/00_Scenes/
+!Assets/00_Scenes/*.unity
+!Assets/00_Scenes/*.meta
 # Keep entire MY SCRIPT folder
 !Assets/MY\ SCRIPT/**
-!Assets/MY SCRIPT/**
+!Assets/02_Script/**
 # Simpan meta file untuk script
 !Assets/**/*.meta
 
