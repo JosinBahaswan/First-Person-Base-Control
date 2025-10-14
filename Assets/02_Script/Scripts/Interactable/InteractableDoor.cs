@@ -31,10 +31,20 @@ public class InteractableDoor : LockableInteractable
 
     public override void ToggleOpenClose()
     {
+        //Bisa pilih dengan Log atau tanpa LOG
+        //Referensi lama jangan dihapus
         if (currentTween != null && currentTween.IsPlaying())
         {
             currentTween.Kill(); // Kill the current tween if it's still running
         }
+
+        //update oleh Josin
+        // Kill any existing tween safely and clear reference to avoid DOTween invalid tween warnings
+        // if (currentTween != null)
+        // {
+        //     currentTween.Kill();
+        //     currentTween = null;
+        // }
 
         if (isOpen)
         {
