@@ -85,7 +85,8 @@ public class LandMineTrapSimple : MonoBehaviour
     /// </summary>
     private void DealDamage(GameObject target)
     {
-        Health health = target.GetComponent<Health>();
+        // Use parent lookup so child colliders still route to the player's Health component
+        Health health = target.GetComponentInParent<Health>();
         if (health != null)
         {
             Debug.Log($"Health found! Current: {health.CurrentHealth}");

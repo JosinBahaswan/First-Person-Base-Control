@@ -19,6 +19,7 @@ public class Health : MonoBehaviour
     public event Action OnDeath;
 
     private bool isDead = false;
+    private float damageImmuneUntil = 0f; // timestamp until which damage is ignored
 
     private void Awake()
     {
@@ -45,6 +46,8 @@ public class Health : MonoBehaviour
         Debug.LogError($"maxHealth: {maxHealth}");
 
         if (isDead) return;
+        // Ignore damage if we are in a short immunity window (e.g., right after healing)
+        if (Time.time < damageImmuneUntil) return;
         currentHealth = Mathf.Clamp(currentHealth - amount, 0, maxHealth);
 
         Debug.LogError($"currentHealth setelah: {currentHealth}");
@@ -60,11 +63,15 @@ public class Health : MonoBehaviour
     /// <summary>
     /// Heal this object.
     /// </summary>
-    public void Heal(float amount)
+    public void Heal(float amount, float postHealGraceSeconds = 0f)
     {
         if (isDead) return;
         currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        if (postHealGraceSeconds > 0f)
+        {
+            damageImmuneUntil = Mathf.Max(damageImmuneUntil, Time.time + postHealGraceSeconds);
+        }
     }
 
     /// <summary>
