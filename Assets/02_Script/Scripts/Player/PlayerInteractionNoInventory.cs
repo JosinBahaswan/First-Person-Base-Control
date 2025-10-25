@@ -88,6 +88,13 @@ public class PlayerInteractionNoInventory : MonoBehaviour
 
     private void Update()
     {
+        // Hide interaction UI by default
+        interactionUI.gameObject.SetActive(false);
+        if (fpp.useJoystick)
+        {
+            interactButton.gameObject.SetActive(false);
+        }
+
         // Check for interactable objects
         CheckForInteractableObject();
 
@@ -154,9 +161,20 @@ public class PlayerInteractionNoInventory : MonoBehaviour
         {
             // Check if the object hit has an Interactable component
             Interactable interactable = hit.collider.GetComponent<Interactable>();
-            currentInteractable = interactable;
 
-            if (interactable != null)
+            // Update current interactable reference
+            if (currentInteractable != interactable)
+            {
+                // If we were looking at a different interactable before, hide its UI
+                if (currentInteractable != null)
+                {
+                    interactionUI.gameObject.SetActive(false);
+                    if (fpp.useJoystick) interactButton.gameObject.SetActive(false);
+                }
+                currentInteractable = interactable;
+            }
+
+            if (interactable != null && !interactable.isInteracted)
             {
                 if (fpp.useJoystick) interactButton.gameObject.SetActive(true);
 
@@ -175,13 +193,16 @@ public class PlayerInteractionNoInventory : MonoBehaviour
             }
             else
             {
-                // Hide message if no interactable object
+                // Hide message if no interactable object or if it's already interacted
                 interactionUI.gameObject.SetActive(false);
                 if (fpp.useJoystick) interactButton.gameObject.SetActive(false);
             }
         }
         else
         {
+            // Reset current interactable when not looking at anything
+            currentInteractable = null;
+
             // Hide message if ray does not hit anything
             interactionUI.gameObject.SetActive(false);
             if (fpp.useJoystick) interactButton.gameObject.SetActive(false);

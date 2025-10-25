@@ -21,10 +21,10 @@ public class HealItem : Item
     // Internal flag to avoid adding multiple listeners
     private bool useListenerBound = false;
 
-    private void Start()
+    public override void Start()
     {
-        // Default state: Interact visible, Use hidden until the item is held
-        SetInteractButtonVisible(true);
+        base.Start();
+        // Default state: Use button hidden until item is held
         if (useButton != null && useButton.gameObject.activeSelf)
         {
             useButton.gameObject.SetActive(false);
@@ -60,11 +60,7 @@ public class HealItem : Item
 
     void SetInteractButtonVisible(bool visible)
     {
-        var pii = PlayerInteractionNoInventory.Instance;
-        if (pii != null && pii.interactButton != null)
-        {
-            pii.interactButton.gameObject.SetActive(visible);
-        }
+        // Biarkan PlayerInteractionNoInventory yang mengatur visibility tombol interact
     }
 
     void UseHealItem()
