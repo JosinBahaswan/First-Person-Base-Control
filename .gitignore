@@ -35,18 +35,20 @@ sysinfo.txt
 # Ignore semua isi Assets
 Assets/*
 
+# IMPORTANT: Un-ignore folders first (harus sebelum file patterns)
+!Assets/00_Scenes/
+!Assets/MY\ SCRIPT/
+!Assets/02_Script/
+
+# Kemudian un-ignore isi folder tersebut
+!Assets/00_Scenes/**
+!Assets/MY\ SCRIPT/**
+!Assets/02_Script/**
+
 # Simpan semua script (.cs) di seluruh Assets
 !Assets/**/*.cs
 
-# Simpan semua Scene
-!Assets/00_Scenes/
-!Assets/00_Scenes/*.unity
-!Assets/00_Scenes/*.meta
-# Keep entire MY SCRIPT folder
-!Assets/MY\ SCRIPT/**
-!Assets/02_Script/**
-!Assets/02_Script/**/*
-# Simpan meta file untuk script
+# Simpan meta file untuk script dan folder
 !Assets/**/*.meta
 
 # Simpan ProjectSettings (penting agar project bisa dibuka konsisten)

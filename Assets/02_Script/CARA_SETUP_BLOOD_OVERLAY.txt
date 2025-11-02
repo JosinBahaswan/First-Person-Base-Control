@@ -1,0 +1,117 @@
+═══════════════════════════════════════════════════════════════
+         CARA SETUP BLOOD OVERLAY (EFEK DARAH DI LAYAR)
+═══════════════════════════════════════════════════════════════
+
+Fitur ini menampilkan gambar darah di layar ketika HP player berkurang.
+Semakin rendah HP, semakin jelas efek darahnya.
+
+═══════════════════════════════════════════════════════════════
+LANGKAH SETUP DI UNITY EDITOR:
+═══════════════════════════════════════════════════════════════
+
+1. BUAT UI IMAGE UNTUK BLOOD OVERLAY
+   ────────────────────────────────────────────────────────────
+   a) Buka Canvas UI di scene Anda
+   b) Klik kanan pada Canvas → UI → Image
+   c) Rename image menjadi "BloodOverlay"
+   d) Set Anchor Preset ke "Stretch" (tahan Alt + Shift, klik stretch)
+   e) Set semua offset (Left, Top, Right, Bottom) = 0
+      Ini akan membuat image fullscreen
+   
+2. SIAPKAN SPRITE GAMBAR DARAH
+   ────────────────────────────────────────────────────────────
+   a) Import gambar efek darah (biasanya PNG dengan alpha channel)
+      - Cari gambar "blood overlay" atau "blood vignette" di Google
+      - Bisa juga gunakan gambar darah dari Asset Store
+   b) Di Inspector sprite:
+      - Set Texture Type = Sprite (2D and UI)
+      - Enable Alpha Is Transparency
+      - Apply
+   c) Drag sprite ke field "Source Image" di BloodOverlay Image
+
+3. SETUP BLOOD OVERLAY IMAGE
+   ────────────────────────────────────────────────────────────
+   a) Pilih BloodOverlay GameObject
+   b) Di Image Component:
+      - Color: Set warna merah (R:255, G:0, B:0)
+      - Alpha (A): Set ke 0 (transparan) - script akan mengatur ini
+      - Image Type: Simple
+      - Raycast Target: DISABLE (unchecked) - agar tidak block input
+   c) Di RectTransform:
+      - Pastikan fullscreen (stretch)
+
+4. ASSIGN KE PLAYERHEALTH UI SCRIPT
+   ────────────────────────────────────────────────────────────
+   a) Cari GameObject yang memiliki component "PlayerHealthUI"
+   b) Di Inspector, cari section "Blood Overlay"
+   c) Drag "BloodOverlay" GameObject ke field "Blood Overlay Image"
+
+5. SETTING PARAMETER (OPSIONAL)
+   ────────────────────────────────────────────────────────────
+   Di PlayerHealthUI component, Anda bisa adjust:
+   
+   • Blood Overlay Threshold (default: 0.5)
+     → HP threshold kapan mulai muncul efek (0.5 = 50% HP)
+   
+   • Max Blood Alpha (default: 0.7)
+     → Opacity maksimum ketika HP sangat rendah (0-1)
+   
+   • Blood Fade In Speed (default: 2)
+     → Kecepatan muncul efek ketika terkena damage
+   
+   • Blood Fade Out Speed (default: 1)
+     → Kecepatan hilang efek ketika HP pulih
+
+═══════════════════════════════════════════════════════════════
+CARA KERJA:
+═══════════════════════════════════════════════════════════════
+
+• Ketika HP > 50% (default threshold):
+  → Tidak ada efek darah, layar normal
+
+• Ketika HP ≤ 50%:
+  → Efek darah mulai muncul
+
+• Ketika HP semakin rendah:
+  → Efek darah semakin jelas/intens
+
+• Ketika HP pulih (heal):
+  → Efek darah perlahan hilang
+
+═══════════════════════════════════════════════════════════════
+TIPS:
+═══════════════════════════════════════════════════════════════
+
+1. Pastikan BloodOverlay berada di TOP hierarchy Canvas
+   (agar render paling atas/depan)
+
+2. Untuk efek lebih realistis:
+   - Gunakan sprite blood vignette (gelap di pinggir)
+   - Set warna ke merah gelap (R:150, G:0, B:0)
+
+3. Untuk mobile/performance:
+   - Gunakan sprite dengan resolusi sedang (1024x1024)
+   - Compress texture dengan format sesuai platform
+
+4. Test dengan mengurangi HP player:
+   - Gunakan trap/enemy untuk damage
+   - Atau buat test button untuk TakeDamage()
+
+═══════════════════════════════════════════════════════════════
+TROUBLESHOOTING:
+═══════════════════════════════════════════════════════════════
+
+Q: Efek tidak muncul?
+A: • Cek apakah Blood Overlay Image sudah di-assign
+   • Cek apakah Canvas dalam mode Screen Space
+   • Cek layer dan sorting order Canvas
+
+Q: Efek terlalu kuat/lemah?
+A: • Adjust "Max Blood Alpha" (0-1)
+   • Adjust "Blood Overlay Threshold"
+
+Q: Efek terlalu lambat/cepat?
+A: • Adjust "Blood Fade In Speed"
+   • Adjust "Blood Fade Out Speed"
+
+═══════════════════════════════════════════════════════════════

@@ -25,6 +25,7 @@ public class AIHunter : MonoBehaviour
 
     [Header("Attack Settings")]
     public float attackDistance = 1.5f;
+    public float attackCooldown = 3f; // Cooldown setelah attack/jumpscare
     public UnityEvent onAttackJumpscareEvent;
 
     [Header("Distract Settings")]
@@ -49,6 +50,7 @@ public class AIHunter : MonoBehaviour
     private bool isChasing = false;
     private float chaseStartTime;
     private bool isAttack = false;
+    private float lastAttackTime = -999f; // Track waktu terakhir attack
     private bool wasChasing = false; // New variable to track chase state changes
 
     private void Start()
@@ -107,7 +109,19 @@ public class AIHunter : MonoBehaviour
 
         // Update move parameter based on agent's velocity magnitude
         float moveSpeed = Mathf.Clamp01(agent.velocity.magnitude / agent.speed);
-        animator.SetFloat(moveParameter, moveSpeed);
+
+        // SAFETY: Ensure Move parameter never stuck at negative values (jumpscare state)
+        // Negative Move values should ONLY be set by AIHunterSupport during jumpscare
+        float currentMove = animator.GetFloat(moveParameter);
+        if (currentMove < 0f && this.enabled) // If AI is enabled but Move is negative, force fix
+        {
+            animator.SetFloat(moveParameter, moveSpeed);
+            Debug.LogWarning($"[AIHunter] {name} - Detected stuck animator (Move={currentMove}), force reset to {moveSpeed}");
+        }
+        else
+        {
+            animator.SetFloat(moveParameter, moveSpeed);
+        }
 
         // Update the state tracking variable
         wasChasing = isChasing;
@@ -141,6 +155,14 @@ public class AIHunter : MonoBehaviour
                     currentDetectionAngle = chaseDetectionAngle;
                     isChasing = true;
                     chaseStartTime = Time.time;
+
+                    // FORCE switch animator to chase immediately
+                    if (animator != null)
+                    {
+                        animator.Play(chaseBlendAnim);
+                        Debug.Log($"[AIHunter] {name} - Player detected! Switching to CHASE animation");
+                    }
+
                     return;
                 }
             }
@@ -155,10 +177,12 @@ public class AIHunter : MonoBehaviour
 
         if (Vector3.Distance(transform.position, currentTarget.position) <= attackDistance)
         {
-            if (!isAttack)
+            // Check attack cooldown
+            if (!isAttack && Time.time - lastAttackTime >= attackCooldown)
             {
                 onAttackJumpscareEvent.Invoke();
                 isAttack = true;
+                lastAttackTime = Time.time;
             }
         }
     }
@@ -225,6 +249,44 @@ public class AIHunter : MonoBehaviour
         {
             currentDetectionRadius = chaseDetectionRadius;
         }
+    }
+
+    /// <summary>
+    /// Public method untuk reset chase state dan kembali ke wander mode
+    /// Dipanggil oleh AIHunterSupport setelah jumpscare
+    /// </summary>
+    public void ResetToWanderMode()
+    {
+        // Reset chase state
+        currentTarget = null;
+        isChasing = false;
+        isAttack = false;
+
+        // Reset detection settings
+        currentDetectionRadius = defaultDetectionRadius;
+        currentDetectionAngle = defaultDetectionAngle;
+
+        // Reset speed
+        agent.speed = wanderSpeed;
+
+        // CRITICAL: Force reset animator ke wander state
+        // Clear any stuck animation states (jumpscare, chase, etc)
+        if (animator != null)
+        {
+            // Set Move parameter ke small positive value untuk ensure proper blend tree transition
+            animator.SetFloat(moveParameter, 0.01f);
+            animator.Update(0f);
+
+            // Play wander blend tree explicitly
+            animator.Play(wanderBlendAnim);
+
+            Debug.Log($"[AIHunter] {name} - Animator FORCE RESET to wander blend tree");
+        }
+
+        // Go back to wander
+        WanderToNextPoint();
+
+        Debug.Log($"[AIHunter] {name} - Reset to wander mode");
     }
 
     private void OnDrawGizmosSelected()
