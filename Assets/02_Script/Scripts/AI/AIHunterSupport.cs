@@ -10,16 +10,33 @@ using UnityEngine.UI;
 /// </summary>
 public class AIHunterSupport : MonoBehaviour
 {
+    /// <summary>
+    /// Mode damage jumpscare
+    /// </summary>
+    public enum DamageMode
+    {
+        [Tooltip("Damage diberikan 1x saat jumpscare dimulai")]
+        OneTime,
+        [Tooltip("Damage diberikan setiap detik selama jumpscare berlangsung")]
+        PerSecond
+    }
     [Header("Jumpscare Settings")]
     [SerializeField] private Animator zombieAnimator;
     [Tooltip("Durasi animasi jumpscare (detik) - waktu tunggu sebelum play idle animation")]
     [SerializeField] private float jumpscareAnimationDuration = 2f;
     [SerializeField] private GameObject jumpscareCamera; // Kamera khusus untuk jumpscare scene
     [SerializeField] private int releasesToDisable = 5;
-    [SerializeField] private float jumpscareDamage = 20f; // Damage yang diberikan ke player saat jumpscare
     [SerializeField] private bool showDebugLogs = true;
     [Tooltip("Jika animation clip di-loop, set true untuk force stop animation setelah escape")]
     [SerializeField] private bool forceStopLoopedAnimation = true;
+
+    [Header("Damage Settings")]
+    [SerializeField] private bool enableJumpscareDamage = true;
+    [Tooltip("One Time: Damage diberikan 1x saat jumpscare mulai\nPer Second: Damage diberikan setiap detik selama jumpscare")]
+    [SerializeField] private DamageMode damageMode = DamageMode.OneTime;
+    [SerializeField] private float jumpscareDamage = 20f; // Damage yang diberikan ke player
+    [Tooltip("Interval damage per detik (hanya untuk mode Per Second)")]
+    [SerializeField] private float damageInterval = 1f;
 
     [Header("AI Re-Enable Settings")]
     [Tooltip("Toggle untuk re-enable AI setelah jumpscare")]
@@ -60,6 +77,8 @@ public class AIHunterSupport : MonoBehaviour
     private float lastInputTime = 0f; // Debounce untuk input
     private const float INPUT_DEBOUNCE = 0.2f; // 200ms debounce between inputs
     private bool isProcessingInput = false; // Prevent re-entrant calls
+    private Coroutine damageCoroutine = null; // Track coroutine damage per detik
+    private Health playerHealth = null; // Cache player health component
 
     private void Awake()
     {
@@ -157,8 +176,24 @@ public class AIHunterSupport : MonoBehaviour
         lastJumpscareTime = Time.time;
         lastInputTime = 0f; // Reset input debounce untuk jumpscare baru
 
-        // Apply damage ke player
-        ApplyJumpscareDamageToPlayer();
+        // Apply damage ke player berdasarkan mode
+        if (enableJumpscareDamage)
+        {
+            if (damageMode == DamageMode.OneTime)
+            {
+                // Damage 1x saat jumpscare mulai
+                ApplyJumpscareDamageToPlayer();
+            }
+            else if (damageMode == DamageMode.PerSecond)
+            {
+                // Start coroutine untuk damage per detik
+                if (damageCoroutine != null)
+                {
+                    StopCoroutine(damageCoroutine);
+                }
+                damageCoroutine = StartCoroutine(DamagePerSecondCoroutine());
+            }
+        }
 
         // 1. Set jumpscare camera active
         if (jumpscareCamera != null)
@@ -410,6 +445,15 @@ public class AIHunterSupport : MonoBehaviour
         isJumpscareActive = false;
         isEscaping = false;
 
+        // Stop damage coroutine jika masih berjalan
+        if (damageCoroutine != null)
+        {
+            StopCoroutine(damageCoroutine);
+            damageCoroutine = null;
+            if (showDebugLogs)
+                Debug.Log($"[AIHunterSupport] {name} - Damage per second coroutine stopped");
+        }
+
         if (showDebugLogs)
             Debug.Log($"[AIHunterSupport] {name} - [STEP 2] Flags reset. isJumpscareActive: false, isEscaping: false");
 
@@ -501,26 +545,30 @@ public class AIHunterSupport : MonoBehaviour
             return;
         }
 
-        // Cari player dengan tag "Player"
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player == null)
+        // Cari player health component (cache jika belum ada)
+        if (playerHealth == null)
         {
-            if (showDebugLogs)
-                Debug.LogWarning($"[AIHunterSupport] {name} - Player not found with tag 'Player'");
-            return;
-        }
+            // Cari player dengan tag "Player"
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null)
+            {
+                if (showDebugLogs)
+                    Debug.LogWarning($"[AIHunterSupport] {name} - Player not found with tag 'Player'");
+                return;
+            }
 
-        // Coba get Health component dari player
-        Health playerHealth = player.GetComponent<Health>();
-        if (playerHealth == null)
-        {
-            // Coba cari di children
-            playerHealth = player.GetComponentInChildren<Health>();
-        }
-        if (playerHealth == null)
-        {
-            // Coba cari di parent
-            playerHealth = player.GetComponentInParent<Health>();
+            // Coba get Health component dari player
+            playerHealth = player.GetComponent<Health>();
+            if (playerHealth == null)
+            {
+                // Coba cari di children
+                playerHealth = player.GetComponentInChildren<Health>();
+            }
+            if (playerHealth == null)
+            {
+                // Coba cari di parent
+                playerHealth = player.GetComponentInParent<Health>();
+            }
         }
 
         if (playerHealth != null)
@@ -534,6 +582,29 @@ public class AIHunterSupport : MonoBehaviour
             if (showDebugLogs)
                 Debug.LogWarning($"[AIHunterSupport] {name} - Health component not found on player!");
         }
+    }
+
+    /// <summary>
+    /// Coroutine untuk apply damage per detik selama jumpscare
+    /// </summary>
+    private IEnumerator DamagePerSecondCoroutine()
+    {
+        if (showDebugLogs)
+            Debug.Log($"[AIHunterSupport] {name} - Starting damage per second coroutine (Damage: {jumpscareDamage}, Interval: {damageInterval}s)");
+
+        while (isJumpscareActive && !isEscaping)
+        {
+            // Apply damage
+            ApplyJumpscareDamageToPlayer();
+
+            // Wait untuk interval berikutnya
+            yield return new WaitForSeconds(damageInterval);
+        }
+
+        if (showDebugLogs)
+            Debug.Log($"[AIHunterSupport] {name} - Damage per second coroutine stopped");
+
+        damageCoroutine = null;
     }
 
     /// <summary>
@@ -573,6 +644,13 @@ public class AIHunterSupport : MonoBehaviour
         jumpscareTriggered = false;
         isJumpscareActive = false;
         currentReleaseCount = 0;
+
+        // Stop damage coroutine jika berjalan
+        if (damageCoroutine != null)
+        {
+            StopCoroutine(damageCoroutine);
+            damageCoroutine = null;
+        }
 
         if (showDebugLogs)
             Debug.Log($"[AIHunterSupport] {name} - Jumpscare state reset");
