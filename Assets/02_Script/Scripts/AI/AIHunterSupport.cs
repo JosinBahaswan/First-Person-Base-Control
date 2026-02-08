@@ -78,7 +78,8 @@ public class AIHunterSupport : MonoBehaviour
     private const float INPUT_DEBOUNCE = 0.2f; // 200ms debounce between inputs
     private bool isProcessingInput = false; // Prevent re-entrant calls
     private Coroutine damageCoroutine = null; // Track coroutine damage per detik
-    private Health playerHealth = null; // Cache player health component
+    private Health playerHealth = null; // Cache player health component (jika ada)
+    private PlayerManager playerManager = null; // Cache player manager (jika ada)
 
     private void Awake()
     {
@@ -177,22 +178,34 @@ public class AIHunterSupport : MonoBehaviour
         lastInputTime = 0f; // Reset input debounce untuk jumpscare baru
 
         // Apply damage ke player berdasarkan mode
+        if (showDebugLogs)
+            Debug.Log($"[AIHunterSupport] {name} - ⚠️ DAMAGE CHECK: enableJumpscareDamage={enableJumpscareDamage}, damageMode={damageMode}, jumpscareDamage={jumpscareDamage}");
+
         if (enableJumpscareDamage)
         {
             if (damageMode == DamageMode.OneTime)
             {
                 // Damage 1x saat jumpscare mulai
+                if (showDebugLogs)
+                    Debug.Log($"[AIHunterSupport] {name} - 💥 Applying ONE TIME damage: {jumpscareDamage}");
                 ApplyJumpscareDamageToPlayer();
             }
             else if (damageMode == DamageMode.PerSecond)
             {
                 // Start coroutine untuk damage per detik
+                if (showDebugLogs)
+                    Debug.Log($"[AIHunterSupport] {name} - 💥 Starting PER SECOND damage coroutine: {jumpscareDamage} every {damageInterval}s");
                 if (damageCoroutine != null)
                 {
                     StopCoroutine(damageCoroutine);
                 }
                 damageCoroutine = StartCoroutine(DamagePerSecondCoroutine());
             }
+        }
+        else
+        {
+            if (showDebugLogs)
+                Debug.LogWarning($"[AIHunterSupport] {name} - ⚠️ Jumpscare damage is DISABLED! Check 'Enable Jumpscare Damage' in inspector");
         }
 
         // 1. Set jumpscare camera active
@@ -535,56 +548,122 @@ public class AIHunterSupport : MonoBehaviour
 
     /// <summary>
     /// Apply damage ke player saat jumpscare
+    /// Support 2 sistem: Health component ATAU PlayerManager singleton
     /// </summary>
     private void ApplyJumpscareDamageToPlayer()
     {
+        if (showDebugLogs)
+            Debug.Log($"[AIHunterSupport] {name} - 🔍 ApplyJumpscareDamageToPlayer() called, damage amount: {jumpscareDamage}");
+
         if (jumpscareDamage <= 0f)
         {
             if (showDebugLogs)
-                Debug.Log($"[AIHunterSupport] {name} - Jumpscare damage is 0, skipping damage");
+                Debug.LogWarning($"[AIHunterSupport] {name} - ❌ Jumpscare damage is 0 or negative ({jumpscareDamage}), skipping damage");
             return;
         }
 
-        // Cari player health component (cache jika belum ada)
+        // === METHOD 1: Try PlayerManager Singleton (Priority) ===
+        if (playerManager == null)
+        {
+            playerManager = PlayerManager.Instance;
+            if (playerManager != null && showDebugLogs)
+                Debug.Log($"[AIHunterSupport] {name} - ✅ Found PlayerManager Singleton! (Health: {playerManager.currentHealth}/{playerManager.maxHealth})");
+        }
+
+        if (playerManager != null)
+        {
+            float healthBefore = playerManager.currentHealth;
+            playerManager.TakeDamage(jumpscareDamage);
+            float healthAfter = playerManager.currentHealth;
+
+            if (showDebugLogs)
+            {
+                Debug.Log($"[AIHunterSupport] {name} - � DAMAGE APPLIED via PlayerManager!");
+                Debug.Log($"[AIHunterSupport]   Damage: {jumpscareDamage}");
+                Debug.Log($"[AIHunterSupport]   Health BEFORE: {healthBefore}");
+                Debug.Log($"[AIHunterSupport]   Health AFTER: {healthAfter}");
+                Debug.Log($"[AIHunterSupport]   Actual damage taken: {healthBefore - healthAfter}");
+            }
+            return; // Success, exit
+        }
+
+        // === METHOD 2: Try Health Component (Fallback) ===
         if (playerHealth == null)
         {
+            if (showDebugLogs)
+                Debug.Log($"[AIHunterSupport] {name} - 🔍 PlayerManager not found, trying Health component...");
+
             // Cari player dengan tag "Player"
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player == null)
             {
                 if (showDebugLogs)
-                    Debug.LogWarning($"[AIHunterSupport] {name} - Player not found with tag 'Player'");
+                    Debug.LogError($"[AIHunterSupport] {name} - ❌ Player not found with tag 'Player'! Make sure player GameObject has 'Player' tag.");
                 return;
             }
+
+            if (showDebugLogs)
+                Debug.Log($"[AIHunterSupport] {name} - ✅ Found player GameObject: {player.name}");
 
             // Coba get Health component dari player
             playerHealth = player.GetComponent<Health>();
             if (playerHealth == null)
             {
+                if (showDebugLogs)
+                    Debug.Log($"[AIHunterSupport] {name} - Health not on root, checking children...");
                 // Coba cari di children
                 playerHealth = player.GetComponentInChildren<Health>();
             }
             if (playerHealth == null)
             {
+                if (showDebugLogs)
+                    Debug.Log($"[AIHunterSupport] {name} - Health not in children, checking parent...");
                 // Coba cari di parent
                 playerHealth = player.GetComponentInParent<Health>();
+            }
+
+            if (playerHealth == null)
+            {
+                if (showDebugLogs)
+                {
+                    Debug.LogError($"[AIHunterSupport] {name} - ❌ NO Health system found!");
+                    Debug.LogError($"[AIHunterSupport] Neither PlayerManager.Instance nor Health component exists!");
+                    Debug.LogError($"[AIHunterSupport] Available components on player '{player.name}':");
+                    foreach (Component comp in player.GetComponents<Component>())
+                    {
+                        Debug.LogError($"  - {comp.GetType().Name}");
+                    }
+                }
+                return;
+            }
+            else
+            {
+                if (showDebugLogs)
+                    Debug.Log($"[AIHunterSupport] {name} - ✅ Found Health component on player! (Current: {playerHealth.CurrentHealth}/{playerHealth.MaxHealth})");
             }
         }
 
         if (playerHealth != null)
         {
+            float healthBefore = playerHealth.CurrentHealth;
             playerHealth.TakeDamage(jumpscareDamage);
+            float healthAfter = playerHealth.CurrentHealth;
+            
             if (showDebugLogs)
-                Debug.Log($"[AIHunterSupport] {name} - Applied {jumpscareDamage} damage to player. Player health: {playerHealth.CurrentHealth}/{playerHealth.MaxHealth}");
+            {
+                Debug.Log($"[AIHunterSupport] {name} - 💥 DAMAGE APPLIED via Health component!");
+                Debug.Log($"[AIHunterSupport]   Damage: {jumpscareDamage}");
+                Debug.Log($"[AIHunterSupport]   Health BEFORE: {healthBefore}");
+                Debug.Log($"[AIHunterSupport]   Health AFTER: {healthAfter}");
+                Debug.Log($"[AIHunterSupport]   Actual damage taken: {healthBefore - healthAfter}");
+            }
         }
         else
         {
             if (showDebugLogs)
-                Debug.LogWarning($"[AIHunterSupport] {name} - Health component not found on player!");
+                Debug.LogError($"[AIHunterSupport] {name} - ❌ No health system available! Cannot apply damage.");
         }
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Coroutine untuk apply damage per detik selama jumpscare
     /// </summary>
     private IEnumerator DamagePerSecondCoroutine()
